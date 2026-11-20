@@ -5,7 +5,7 @@ import subprocess
 import tempfile
 import zipfile
 
-parser = argparse.ArgumentParser(description='Build unsigned Pixel Motion Suite 2.3.14; sign separately with the release key.')
+parser = argparse.ArgumentParser(description='Build unsigned Pixel Motion Suite 2.3.15; sign separately with the release key.')
 parser.add_argument('tools', type=Path)
 parser.add_argument('output', type=Path)
 args = parser.parse_args()

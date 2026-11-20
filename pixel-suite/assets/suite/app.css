@@ -101,6 +101,10 @@ h1 { margin-top: 1px; font-size: 18px; font-weight: 600; line-height: 1.3; }
 .setting-copy { min-width: 0; flex: 1; }
 .setting-copy h3 { font-size: 14px; font-weight: 600; line-height: 1.4; }
 .setting-copy p { margin-top: 3px; color: var(--muted); font-size: 12px; line-height: 1.45; }
+.about-link { color: var(--text); text-decoration: none; overflow-wrap: anywhere; }
+.about-link .mdui-icon { flex: 0 0 auto; color: var(--accent); font-size: 20px; }
+.about-link:active { background: var(--accent-soft); }
+.about-link:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .switch-control { display: flex; width: 44px; height: 32px; flex: 0 0 auto; align-items: center; justify-content: flex-end; margin: 0 2px 0 0; }
 .switch-control input { width: 1px; height: 1px; }
 .mdui-switch-icon { border-color: var(--muted); }
@@ -118,7 +122,7 @@ h1 { margin-top: 1px; font-size: 18px; font-weight: 600; line-height: 1.3; }
 .picker-button .trailing-icon { color: var(--muted); font-size: 21px; }
 .picker-button:active { background: var(--accent-soft); }
 
-.bottom-nav { position: fixed; z-index: 4; right: 0; bottom: 0; left: 0; display: grid; grid-template-columns: repeat(3, 1fr); min-height: calc(68px + var(--safe-bottom)); padding: 7px 12px calc(7px + var(--safe-bottom)); border-top: 1px solid var(--line); background: color-mix(in srgb, var(--raised) 96%, transparent); backdrop-filter: blur(16px); }
+.bottom-nav { position: fixed; z-index: 4; right: 0; bottom: 0; left: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); min-height: calc(68px + var(--safe-bottom)); padding: 7px 12px calc(7px + var(--safe-bottom)); border-top: 1px solid var(--line); background: color-mix(in srgb, var(--raised) 96%, transparent); backdrop-filter: blur(16px); }
 .nav-item { display: grid; min-width: 0; grid-template-rows: 30px 17px; justify-items: center; align-content: center; gap: 2px; padding: 2px 4px; border: 0; border-radius: 7px; background: transparent; color: var(--muted); cursor: pointer; font-size: 11px; line-height: 1.2; }
 .nav-icon { display: grid; width: 60px; height: 28px; place-items: center; border-radius: 14px; transition: background .15s ease, color .15s ease; }
 .nav-icon .mdui-icon { font-size: 21px; }

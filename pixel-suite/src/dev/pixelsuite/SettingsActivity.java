@@ -1,16 +1,19 @@
 package dev.pixelsuite;
 
 import android.app.Activity;
+import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.os.Bundle;
 import android.view.ViewGroup;
 import android.webkit.JavascriptInterface;
+import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Toast;
 import dev.pixelmotion.a10.recents.AppPickerActivity;
 import dev.pixelmotion.a10.recents.DockSelectionStore;
 import dev.pixelambient.aod.AodControls;
@@ -43,6 +46,20 @@ public final class SettingsActivity extends Activity {
         webView.setBackgroundColor(0xfff4f7f5);
         webView.addJavascriptInterface(new Bridge(), "PixelSuite");
         webView.setWebViewClient(new WebViewClient() {
+            @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                String url = request.getUrl().toString();
+                if (request.isForMainFrame() && ("https://github.com/PoweredBySaintDiana/PixelMotionSuite".equals(url)
+                        || "https://www.coolapk.com/u/39629892".equals(url))) {
+                    try {
+                        startActivity(new Intent(Intent.ACTION_VIEW, request.getUrl()).addCategory(Intent.CATEGORY_BROWSABLE));
+                    } catch (ActivityNotFoundException e) {
+                        Toast.makeText(SettingsActivity.this, "没有可打开此链接的应用", Toast.LENGTH_SHORT).show();
+                    }
+                    return true;
+                }
+                return !allowed(url);
+            }
+
             @Override public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 return !allowed(url);
             }

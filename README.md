@@ -1,4 +1,4 @@
-# Pixel Motion Suite 2.3.14 · Android 17 / API 37
+# Pixel Motion Suite 2.3.15 · Android 17 / API 37
 
 Pixel Motion Suite 是用于 LSPosed 的 Android 模块。它为 Pixel 启动器提供应用打开和回桌动画、分层图标与多任务 Dock，并为支持的系统提供十秒全屏息屏壁纸。当前桌面动效适配 Pixel Launcher 17（versionCode 907）。启用对应功能时，在 LSPosed 中选择 Pixel 启动器、系统界面和 Android 系统的相应作用域，并重启使模块加载。
 
