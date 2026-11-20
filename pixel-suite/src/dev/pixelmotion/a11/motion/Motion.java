@@ -356,8 +356,6 @@ public final class Motion implements IXposedHookLoadPackage {
             catch (Throwable error) { log("Icon layer hooks unavailable: " + error); }
             try { installOpeningCurve(loader, launcher, workspace, hotseat, deviceProfile); }
             catch (Throwable error) { log("A11 opening curve hook unavailable: " + error); }
-            try { OpeningContent.install(loader); }
-            catch (ReflectiveOperationException | RuntimeException | LinkageError error) { log("A10 opening content unavailable: " + error); }
         }
         if (workspaceMotion) try { installBackHomeSink(loader, launcher, workspace, hotseat, deviceProfile); }
         catch (Throwable error) { log("A11 back-home sink unavailable: " + error); }
@@ -473,6 +471,7 @@ public final class Motion implements IXposedHookLoadPackage {
         final Field profile = field(transition, "mDeviceProfile");
         final Field grid = field(deviceProfile, "mWorkspaceProfile");
         final Field cellHeight = field(grid.getType(), "cellHeightPx");
+        final OpeningIconSource iconSource = OpeningIconSource.load(loader);
         final Class<?> openingRunner = runner;
         // The constructor selects the profile before the runner is attached
         // to its animator. Keep the existing duration for the other launches.
@@ -540,11 +539,11 @@ public final class Motion implements IXposedHookLoadPackage {
                     if (p.hasThrowable() || OPENING_CURVES.containsKey(p.thisObject)) return;
                     Object manager = transitionOwner.get(p.thisObject);
                     OpeningTiming timing = null;
-                    if (openDurationStretched && onUiThread() && OpeningContent.matchesIconLaunch(p.args[2])) {
-                        // Runner 907 passes the same target, icon and drag-layer
-                        // offset that were used to construct AnimOpenProperties.
-                        Rect target = (Rect) p.args[9];
-                        RectF source = (RectF) p.args[10];
+                    // Runner 907 receives the original icon view and bounds for this launch.
+                    Rect target = (Rect) p.args[9];
+                    RectF source = (RectF) p.args[10];
+                    if (openDurationStretched && onUiThread() && iconSource != null
+                            && iconSource.matches((View) p.args[11], target, source)) {
                         int[] offset = (int[]) p.args[12];
                         Object currentProfile = profile.get(manager);
                         Object workspaceGrid = currentProfile == null ? null : grid.get(currentProfile);

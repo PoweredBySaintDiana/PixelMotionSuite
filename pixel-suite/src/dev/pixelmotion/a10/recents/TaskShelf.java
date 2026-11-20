@@ -1,11 +1,6 @@
 package dev.pixelmotion.a10.recents;
 
 import android.view.View;
-import android.content.res.Configuration;
-import android.graphics.PointF;
-import android.view.Display;
-import android.view.InputDevice;
-import android.view.MotionEvent;
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedBridge;
 import java.lang.ref.WeakReference;
@@ -17,7 +12,6 @@ import java.util.WeakHashMap;
 final class TaskShelf {
     private static final WeakHashMap<Object, State> HANDLERS = new WeakHashMap<>();
     private static final WeakHashMap<Object, Boolean> ENTRY_RELEASED = new WeakHashMap<>();
-    private static final WeakHashMap<Object, Boolean> LEFT_RELEASED = new WeakHashMap<>();
     private static final WeakHashMap<View, State> PANELS = new WeakHashMap<>();
     private static Object nativeProperty;
     private static Method nativeSetter;
@@ -60,42 +54,10 @@ final class TaskShelf {
             }
         });
         installed = true;
-        try { installLeftEdgeRelease(loader, handler, recents); }
-        catch (ReflectiveOperationException | RuntimeException | LinkageError error) { logError(error); }
-    }
-
-    private static void installLeftEdgeRelease(ClassLoader loader, Class<?> handler, Class<?> recents) throws ReflectiveOperationException {
-        Class<?> input = Class.forName("com.android.quickstep.inputconsumers.OtherActivityInputConsumer", false, loader);
-        Field owner = field(input, "mInteractionHandler"), down = field(input, "mDownPos"), slop = field(input, "mTouchSlop");
-        Field panel = field(handler, "mRecentsView"), paused = field(handler, "mIsMotionPaused");
-        Field device = field(handler, "mDeviceState");
-        Method gestural = Reflect.method(device.getType(), "isFullyGesturalNavMode");
-        Method running = Reflect.method(recents, "getRunningTaskIndex"), next = Reflect.method(recents, "getNextPage");
-        XposedBridge.hookMethod(Reflect.method(input, "onMotionEvent", MotionEvent.class), new XC_MethodHook() {
-            @Override protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                MotionEvent event = (MotionEvent) param.args[0];
-                if (!event.isFromSource(InputDevice.SOURCE_TOUCHSCREEN) || event.getPointerCount() != 1
-                        || event.getActionMasked() != MotionEvent.ACTION_MOVE) return;
-                Object swipe = owner.get(param.thisObject);
-                if (swipe == null || LEFT_RELEASED.containsKey(swipe)) return;
-                PointF origin = (PointF) down.get(param.thisObject);
-                if (origin == null || !ShelfDrag.leftUp(event.getX() - origin.x, event.getY() - origin.y,
-                        slop.getFloat(param.thisObject))) return;
-                View view = (View) panel.get(swipe);
-                if (view == null || view.getDisplay() == null || view.getDisplay().getDisplayId() != Display.DEFAULT_DISPLAY
-                        || view.getResources().getConfiguration().orientation != Configuration.ORIENTATION_PORTRAIT
-                        || view.getLayoutDirection() != View.LAYOUT_DIRECTION_LTR || paused.getBoolean(swipe)
-                        || continuingGesture.getBoolean(swipe) || !(Boolean) gestural.invoke(device.get(swipe))
-                        || (Integer) running.invoke(view) != 0 || (Integer) next.invoke(view) != 0
-                        || getEndTarget.invoke(gestureState.get(swipe)) != null) return;
-                LEFT_RELEASED.put(swipe, Boolean.TRUE);
-                reset(swipe);
-            }
-        });
     }
 
     static void onProgress(Object handler, View recents, float progress, boolean endingHome) {
-        if (!installed || handler == null || recents == null || !Float.isFinite(progress) || LEFT_RELEASED.containsKey(handler)) return;
+        if (!installed || handler == null || recents == null || !Float.isFinite(progress)) return;
         try {
             if (endingHome || yieldsToNative(handler)) {
                 reset(handler);

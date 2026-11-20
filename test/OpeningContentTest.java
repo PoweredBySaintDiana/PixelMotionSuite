@@ -5,25 +5,18 @@ import android.graphics.RectF;
 import android.view.View;
 import com.android.launcher3.*;
 import com.android.launcher3.allapps.ActivityAllAppsContainerView;
-import com.android.launcher3.remoteanimations.AnimOpenProperties;
-import de.robv.android.xposed.XposedBridge;
 
 public final class OpeningContentTest {
     private static void check(boolean actual) { if (!actual) throw new AssertionError(); }
 
-    static void launch(View root, View icon, Rect bounds, boolean splash, boolean expected) throws Throwable {
-        icon.parent=root;
-        RectF source=new RectF();
-        AnimOpenProperties props=new AnimOpenProperties(null,bounds,source,icon,0,0,splash,false);
-        XposedBridge.after(props,null,bounds,source,icon,0,0,splash,false);
-        check(OpeningContent.matchesIconLaunch(props) == expected);
-        boolean fullWidthContent = expected && !splash;
-        int shortSide=Math.min(bounds.width(),bounds.height());
-        check(props.cropWidthStart==(fullWidthContent?shortSide:144) && props.cropHeightStart==props.cropWidthStart);
-        check(props.cropCenterXStart==(fullWidthContent?shortSide:bounds.width())/2);
-        check(props.cropCenterYStart==(fullWidthContent?shortSide:bounds.height())/2);
-        check(props.cropWidthEnd==bounds.width() && props.cropHeightEnd==bounds.height());
-        if (fullWidthContent) check(Math.abs(96f/props.cropWidthStart*shortSide-96f)<.001f);
+    static void checkSource(OpeningIconSource matcher, View host, View icon, Rect target, boolean expected) {
+        View container = new View();
+        container.parent = host;
+        icon.parent = container;
+        RectF source = new RectF();
+        int left = target.left, top = target.top, right = target.right, bottom = target.bottom;
+        check(matcher.matches(icon, target, source) == expected);
+        check(target.left == left && target.top == top && target.right == right && target.bottom == bottom);
     }
 
     static double cubic(double t, double start, double first, double second, double end) {
@@ -72,19 +65,22 @@ public final class OpeningContentTest {
 
     public static void main(String[] args) throws Throwable {
         checkTiming();
-        OpeningContent.install(OpeningContentTest.class.getClassLoader());
-        for (View host:new View[]{new Workspace(),new ActivityAllAppsContainerView(),new Hotseat()}) {
-            launch(host,new BubbleTextView(),new Rect(1080,2400),false,true);
-            launch(host,new BubbleTextView(),new Rect(1080,2320),false,true);
-            launch(host,new BubbleTextView(),new Rect(1080,2400),true,true);
-            launch(host,new BubbleTextView(),new Rect(540,2000),true,false);
-            launch(host,new BubbleTextView(),new Rect(1080,1100),false,false);
-            launch(host,new BubbleTextView(),new Rect(540,2000),false,false);
-            launch(host,new View(),new Rect(1080,2400),false,false);
-            host.width=2400;host.height=1080;
-            launch(host,new BubbleTextView(),new Rect(2400,1080),false,true);
+        OpeningIconSource matcher = OpeningIconSource.load(OpeningContentTest.class.getClassLoader());
+        for (View host : new View[]{new Workspace(), new ActivityAllAppsContainerView(), new Hotseat()}) {
+            checkSource(matcher, host, new BubbleTextView(), new Rect(1080, 2400), true);
+            checkSource(matcher, host, new BubbleTextView(), new Rect(1080, 2320), true);
+            checkSource(matcher, host, new BubbleTextView(), new Rect(1080, 2319), false);
+            checkSource(matcher, host, new BubbleTextView(), new Rect(540, 2000), false);
+            checkSource(matcher, host, new View(), new Rect(1080, 2400), false);
+            Rect shifted = new Rect(1080, 2400);
+            shifted.left = 32;
+            shifted.right += 32;
+            checkSource(matcher, host, new BubbleTextView(), shifted, false);
+            host.width = 2400;
+            host.height = 1080;
+            checkSource(matcher, host, new BubbleTextView(), new Rect(2400, 1080), true);
         }
-        launch(new View(),new BubbleTextView(),new Rect(1080,2400),false,false);
-        System.out.println("PASS: Launcher 701 timing branches and curves, warm icon geometry, insets, landscape and splash exclusions");
+        checkSource(matcher, new View(), new BubbleTextView(), new Rect(1080, 2400), false);
+        System.out.println("PASS: Launcher 701 timing and icon sources across full-screen, inset, landscape and split bounds");
     }
 }
