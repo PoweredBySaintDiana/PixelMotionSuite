@@ -1,0 +1,24 @@
+Pixel Motion Suite
+
+Original project code is licensed under the Apache License, Version 2.0.
+The following third-party works retain their respective licenses.
+
+aod-wallpaper
+Copyright (c) 2026 Cheese (Cheese-nya). MIT License.
+The always-on wallpaper implementation adapts the v1.0 project for Android 17.
+Source: https://github.com/Cheese-nya/aod-wallpaper
+License: pixel-suite/assets/LICENSE-aod-wallpaper.txt
+
+MDUI
+Copyright (c) 2016-2021 zdhxiong. MIT License.
+Source: https://github.com/zdhxiong/mdui
+License: pixel-suite/assets/LICENSE-mdui.txt
+
+Roboto font files distributed with MDUI
+Google. Apache License, Version 2.0.
+License: pixel-suite/assets/fonts/roboto/LICENSE.txt
+
+Material Icons font distributed with MDUI
+Google. Distributed with a Creative Commons Attribution 4.0 International notice.
+Source: https://github.com/google/material-design-icons
+License: pixel-suite/assets/icons/material-icons/LICENSE.txt

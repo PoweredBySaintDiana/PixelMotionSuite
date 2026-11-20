@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="dev.pixelmotion.a10.recents"
+    android:versionCode="56"
+    android:versionName="2.3.14">
+    <permission android:name="dev.pixelmotion.a10.recents.permission.AOD_CONTROL" android:protectionLevel="signature" />
+    <uses-permission android:name="dev.pixelmotion.a10.recents.permission.AOD_CONTROL" />
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+        <package android:name="com.google.android.apps.nexuslauncher" />
+        <package android:name="dev.nativecomplements.module" />
+    </queries>
+    <application android:label="Pixel Motion Suite" android:allowBackup="false"
+        android:usesCleartextTraffic="false">
+        <meta-data android:name="xposedmodule" android:value="true" />
+        <meta-data android:name="xposeddescription" android:value="Unified launcher motion, recents dock, and ambient wallpaper features." />
+        <meta-data android:name="xposedminversion" android:value="82" />
+        <meta-data android:name="xposedsharedprefs" android:value="true" />
+        <meta-data android:name="xposedscope" android:resource="@array/xposed_scope" />
+        <activity android:name="dev.pixelsuite.SettingsActivity" android:exported="true"
+            android:label="Pixel Motion Suite" android:theme="@android:style/Theme.Material.Light.NoActionBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity android:name="dev.pixelmotion.a10.recents.AppPickerActivity"
+            android:exported="false" android:label="Dock 应用顺序"
+            android:theme="@android:style/Theme.Material.Light.NoActionBar" />
+        <receiver android:name="dev.pixelsuite.UpgradePreferences" android:exported="false">
+            <intent-filter><action android:name="android.intent.action.MY_PACKAGE_REPLACED" /></intent-filter>
+        </receiver>
+        <provider android:name="dev.pixelmotion.a10.recents.DockSelectionProvider"
+            android:authorities="dev.pixelmotion.a10.recents.selection" android:exported="true"
+            android:grantUriPermissions="false" />
+    </application>
+</manifest>

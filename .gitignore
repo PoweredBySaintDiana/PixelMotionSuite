@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+*.apk
+*.apks
+*.idsig
+*.keystore
+*.jks
+*.p12
+*.pk8
+local.properties

@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <title>Pixel Suite</title>
+  <link rel="stylesheet" href="file:///android_asset/css/mdui.min.css">
+  <link rel="stylesheet" href="app.css">
+</head>
+<body class="mdui-theme-layout-auto mdui-theme-accent-teal">
+  <header class="topbar">
+    <div class="brand-mark" aria-hidden="true"><i class="mdui-icon material-icons">tune</i></div>
+    <div class="topbar-copy">
+      <div class="eyebrow">PIXEL SUITE</div>
+      <h1>功能设置</h1>
+    </div>
+    <span class="build-tag">Android 17</span>
+  </header>
+
+  <main class="content" id="content">
+    <section class="page is-active" id="page-motion" data-page="motion" aria-labelledby="motion-title">
+      <div class="page-heading">
+        <div class="page-icon motion-icon"><i class="mdui-icon material-icons" aria-hidden="true">animation</i></div>
+        <div><p class="section-kicker">PIXEL LAUNCHER</p><h2 id="motion-title">桌面动画</h2></div>
+      </div>
+      <div class="settings-list">
+        <div class="setting-row">
+          <div class="setting-copy"><h3>应用开关动画</h3><p>图标分层运动、跟手曲线与回弹效果</p></div>
+          <label class="mdui-switch switch-control"><input type="checkbox" data-feature="motion_icon_transition" aria-label="应用开关动画"><i class="mdui-switch-icon"></i></label>
+        </div>
+        <div class="setting-row">
+          <div class="setting-copy"><h3>启动页图标分层</h3><p>从主屏幕、固定底栏或应用抽屉打开应用时，取图标背景主色填满启动页，中央只保留前景。应用专属启动图保持原样。</p></div>
+          <label class="mdui-switch switch-control"><input type="checkbox" data-feature="motion_splash_layers" aria-label="启动页图标分层"><i class="mdui-switch-icon"></i></label>
+        </div>
+        <div class="setting-row">
+          <div class="setting-copy"><h3>桌面元素错落下沉</h3><p>返回桌面时，图标和小部件按行跟随下沉</p></div>
+          <label class="mdui-switch switch-control"><input type="checkbox" data-feature="motion_workspace_dip" aria-label="桌面元素错落下沉"><i class="mdui-switch-icon"></i></label>
+        </div>
+        <div class="setting-row">
+          <div class="setting-copy"><h3>翻页超出回弹</h3><p>桌面翻页末尾轻微越过边界后归位</p></div>
+          <label class="mdui-switch switch-control"><input type="checkbox" data-feature="motion_page_recoil" aria-label="翻页超出回弹"><i class="mdui-switch-icon"></i></label>
+        </div>
+      </div>
+      <div class="restart-note"><i class="mdui-icon material-icons" aria-hidden="true">info_outline</i><span>设置保存后，重启 Pixel 启动器即可生效。</span></div>
+    </section>
+
+    <section class="page" id="page-recents" data-page="recents" aria-labelledby="recents-title" hidden>
+      <div class="page-heading">
+        <div class="page-icon recents-icon"><i class="mdui-icon material-icons" aria-hidden="true">view_carousel</i></div>
+        <div><p class="section-kicker">OVERVIEW</p><h2 id="recents-title">多任务</h2></div>
+      </div>
+      <div class="settings-list">
+        <div class="setting-row">
+          <div class="setting-copy"><h3>多任务 Dock</h3><p>在多任务界面显示独立应用栏</p></div>
+          <label class="mdui-switch switch-control"><input type="checkbox" data-feature="recents_overview_dock" aria-label="多任务 Dock"><i class="mdui-switch-icon"></i></label>
+        </div>
+        <div class="setting-row">
+          <div class="setting-copy"><h3>从 Dock 启动小窗</h3><p>点击多任务 Dock 应用时调用小窗启动</p></div>
+          <label class="mdui-switch switch-control"><input type="checkbox" data-feature="recents_float_launch" aria-label="从 Dock 启动小窗"><i class="mdui-switch-icon"></i></label>
+        </div>
+      </div>
+      <div class="subsection-heading"><div><p class="section-kicker">APP SHORTCUTS</p><h3>应用建议</h3></div></div>
+      <div class="setting-row custom-row">
+        <div class="setting-copy"><h3>使用自选应用顺序</h3><p>按你选择的应用列表展示并轮换</p></div>
+        <label class="mdui-switch switch-control"><input type="checkbox" id="custom-apps" aria-label="使用自选应用顺序"><i class="mdui-switch-icon"></i></label>
+      </div>
+      <button class="mdui-btn mdui-btn-raised picker-button" id="open-picker" type="button">
+        <i class="mdui-icon material-icons" aria-hidden="true">format_list_numbered</i><span>选择应用与排序</span>
+        <i class="mdui-icon material-icons trailing-icon" aria-hidden="true">chevron_right</i>
+      </button>
+      <div class="restart-note"><i class="mdui-icon material-icons" aria-hidden="true">info_outline</i><span>Dock 与卡片设置重启 Pixel 启动器后生效；小窗启动还需重启系统界面。</span></div>
+    </section>
+
+    <section class="page" id="page-aod" data-page="aod" aria-labelledby="aod-title" hidden>
+      <div class="page-heading">
+        <div class="page-icon aod-icon"><i class="mdui-icon material-icons" aria-hidden="true">bedtime</i></div>
+        <div><p class="section-kicker">AMBIENT DISPLAY</p><h2 id="aod-title">息屏显示</h2></div>
+      </div>
+      <div class="settings-list">
+        <div class="setting-row">
+          <div class="setting-copy"><h3>全屏息屏壁纸</h3><p>锁屏或从黑屏抬手进入息屏显示时，壁纸可见后最多显示 10 秒。提前亮屏会取消计时。</p></div>
+          <label class="mdui-switch switch-control"><input type="checkbox" data-feature="aod_restore_earth" aria-label="全屏息屏壁纸"><i class="mdui-switch-icon"></i></label>
+        </div>
+        <div class="setting-row">
+          <div class="setting-copy"><h3>深色壁纸遮罩</h3><p>为息屏壁纸加上约 90% 的黑色遮罩；关闭后不额外压暗壁纸。</p></div>
+          <label class="mdui-switch switch-control"><input type="checkbox" data-feature="aod_visibility" aria-label="深色壁纸遮罩"><i class="mdui-switch-icon"></i></label>
+        </div>
+        <div class="setting-row">
+          <div class="setting-copy"><h3>提高息屏面板亮度</h3><p>仅在十秒全屏息显时提高内屏的亮度请求，不改变壁纸颜色。关闭后，下次息显恢复原亮度。</p></div>
+          <label class="mdui-switch switch-control"><input type="checkbox" data-feature="aod_wallpaper_gain" aria-label="提高息屏面板亮度"><i class="mdui-switch-icon"></i></label>
+        </div>
+      </div>
+      <p id="aod-status" role="status"></p>
+      <div class="restart-note"><i class="mdui-icon material-icons" aria-hidden="true">info_outline</i><span>全屏壁纸只需在 LSPosed 勾选 Android 系统和系统界面，安装后重启一次。打开时同步开启系统常亮息屏；关闭后恢复普通息屏，不再计时。</span></div>
+    </section>
+  </main>
+
+  <nav class="bottom-nav" aria-label="功能分类">
+    <button class="nav-item is-selected" type="button" data-target="motion" aria-current="page">
+      <span class="nav-icon"><i class="mdui-icon material-icons" aria-hidden="true">animation</i></span><span>桌面动画</span>
+    </button>
+    <button class="nav-item" type="button" data-target="recents">
+      <span class="nav-icon"><i class="mdui-icon material-icons" aria-hidden="true">view_carousel</i></span><span>多任务</span>
+    </button>
+    <button class="nav-item" type="button" data-target="aod">
+      <span class="nav-icon"><i class="mdui-icon material-icons" aria-hidden="true">bedtime</i></span><span>息屏显示</span>
+    </button>
+  </nav>
+  <div class="snackbar" id="snackbar" role="status" aria-live="polite"></div>
+  <script src="file:///android_asset/js/mdui.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

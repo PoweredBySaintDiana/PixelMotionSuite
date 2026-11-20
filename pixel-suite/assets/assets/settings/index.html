@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <title>桌面建议应用</title>
+  <link rel="stylesheet" href="../css/mdui.min.css">
+  <link rel="stylesheet" href="app.css">
+</head>
+<body class="mdui-theme-layout-auto mdui-theme-accent-teal">
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="heading">
+        <div class="eyebrow">PIXEL RECENTS</div>
+        <h1>桌面建议应用</h1>
+      </div>
+      <button id="reload-button" class="icon-button" type="button" aria-label="重新读取应用">
+        <i class="mdui-icon material-icons" aria-hidden="true">refresh</i>
+      </button>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="selection-panel" aria-labelledby="selection-title">
+      <div class="section-heading">
+        <div>
+          <h2 id="selection-title">显示顺序</h2>
+          <p>超过 Dock 容量时每 2 秒轮换，应用图标不会重复</p>
+          <p>拖动右侧圆点，可将应用插入指定位置</p>
+        </div>
+        <span id="selected-count" class="count-badge">0</span>
+      </div>
+      <div id="selected-list" class="selected-list">
+        <div id="selected-empty" class="empty-inline">还没有选择应用</div>
+      </div>
+      <div class="selection-actions">
+        <button id="native-button" class="mdui-btn mdui-btn-dense" type="button">
+          <i class="mdui-icon material-icons" aria-hidden="true">auto_awesome</i>
+          使用系统建议
+        </button>
+        <button id="save-button" class="mdui-btn mdui-btn-raised mdui-color-theme" type="button" disabled>
+          <i class="mdui-icon material-icons" aria-hidden="true">check</i>
+          保存并应用
+        </button>
+      </div>
+      <div id="save-status" class="save-status" role="status" aria-live="polite"></div>
+    </section>
+
+    <section class="apps-section" aria-labelledby="apps-title">
+      <div class="section-heading apps-heading">
+        <div>
+          <h2 id="apps-title">已安装应用</h2>
+          <p id="apps-subtitle">正在读取可启动的应用</p>
+        </div>
+        <span id="visible-count" class="muted-count"></span>
+      </div>
+      <label class="search-field">
+        <i class="mdui-icon material-icons" aria-hidden="true">search</i>
+        <input id="search-input" type="search" autocomplete="off" placeholder="搜索应用名称或包名" aria-label="搜索应用名称或包名">
+        <button id="clear-search" class="icon-button clear-search" type="button" aria-label="清除搜索" hidden>
+          <i class="mdui-icon material-icons" aria-hidden="true">close</i>
+        </button>
+      </label>
+      <div id="apps-list" class="apps-list" aria-live="polite"></div>
+      <div id="apps-empty" class="empty-state" hidden>
+        <i class="mdui-icon material-icons" aria-hidden="true">search_off</i>
+        <span>没有找到匹配的应用</span>
+      </div>
+    </section>
+  </main>
+
+  <div id="snackbar" class="snackbar" role="status" aria-live="polite"></div>
+  <script src="../js/mdui.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
