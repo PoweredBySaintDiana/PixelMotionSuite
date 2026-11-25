@@ -94,7 +94,7 @@ public final class Motion implements IXposedHookLoadPackage {
         final Field workspace = field(launcher, "mWorkspace");
         final Field hotseat = field(launcher, "mHotseat");
         if (workspaceMotion) WorkspaceMotion.install();
-        if (workspaceMotion) try { installWorkspaceInterruption(loader, launcher); }
+        if (workspaceMotion) try { WorkspaceReturn.install(loader); }
         catch (ReflectiveOperationException error) { log("Workspace touch hooks unavailable: " + error); }
         try { RevealScaleCleanup.install(loader); }
         catch (ReflectiveOperationException error) { log("Reveal scale cleanup unavailable: " + error); }
@@ -369,15 +369,6 @@ public final class Motion implements IXposedHookLoadPackage {
         }
         if (workspaceMotion) try { installBackHomeSink(loader, launcher, workspace, hotseat, deviceProfile); }
         catch (Throwable error) { log("A11 back-home sink unavailable: " + error); }
-        if (workspaceMotion) try {
-            XposedBridge.hookMethod(method(launcher, "onResume"), new XC_MethodHook() {
-                @Override protected void afterHookedMethod(MethodHookParam p) {
-                    if (!onUiThread()) return;
-                    try { settleShift(p.thisObject, loader, workspace, hotseat); }
-                    catch (Throwable error) { log("A11 settle shift skipped: " + error); }
-                }
-            });
-        } catch (Throwable error) { log("A11 settle hook unavailable: " + error); }
         if (workspaceMotion) try {
             XposedBridge.hookMethod(method(launcher, "onDestroy"), new XC_MethodHook() {
                 @Override protected void beforeHookedMethod(MethodHookParam p) {
@@ -796,7 +787,9 @@ public final class Motion implements IXposedHookLoadPackage {
                 delays.add(0L);
             }
         }
-        motion.animate((Context) owner, targets, distances, delays, rising,
+        if (rising) motion.animate((Context) owner, targets, distances, delays, true,
+                clipGuard::disable, clipGuard::restore);
+        else motion.returnToHome((Context) owner, targets, distances, delays,
                 clipGuard::disable, clipGuard::restore);
         if (!loggedShift) {
             loggedShift = true;
@@ -804,14 +797,6 @@ public final class Motion implements IXposedHookLoadPackage {
         log("v8.1 shift " + (rising ? "rise" : "sink")
                 + " blocks=" + targets.size() + " offset=" + Math.round(offset)
                 + " dock=" + Math.round(dockDistance) + (dockLaunch ? " (dock launch)" : ""));
-    }
-
-    /** Restores a raised desktop when a return path did not run the sink. */
-    private static void settleShift(Object owner, ClassLoader loader,
-            Field workspaceField, Field hotseatField) throws Throwable {
-        WorkspaceMotion motion = WORKSPACE_MOTIONS.get(owner);
-        if (motion == null || !motion.raised() || (motion.active() && !motion.rising())) return;
-        motion.settle((Context) owner);
     }
 
     static void continueWorkspace(Object owner) {
@@ -822,34 +807,6 @@ public final class Motion implements IXposedHookLoadPackage {
             motion.clear();
             log("Workspace interruption settle unavailable: " + error);
         }
-    }
-
-    private static void installWorkspaceInterruption(ClassLoader loader, Class<?> launcher)
-            throws ReflectiveOperationException {
-        Class<?> layer = load("com.android.launcher3.views.BaseDragLayer", loader);
-        Field owner = field(layer, "mContainer");
-        Field manager = field(launcher, "mStateManager");
-        Field current = field(manager.getType(), "mState");
-        Class<?> state = load("com.android.launcher3.LauncherState", loader);
-        Object normal = field(state, "NORMAL").get(null);
-        Object background = field(state, "BACKGROUND_APP").get(null);
-        XC_MethodHook touch = new XC_MethodHook() {
-            @Override protected void beforeHookedMethod(MethodHookParam p) throws Throwable {
-                android.view.MotionEvent event = (android.view.MotionEvent) p.args[0];
-                if (!onUiThread() || event.getActionMasked() != android.view.MotionEvent.ACTION_DOWN) return;
-                Object activity = owner.get(p.thisObject);
-                if (launcher.isInstance(activity) && current.get(manager.get(activity)) == normal)
-                    continueWorkspace(activity);
-            }
-        };
-        XposedBridge.hookMethod(method(layer, "dispatchTouchEvent", android.view.MotionEvent.class), touch);
-        XposedBridge.hookMethod(method(layer, "proxyTouchEvent", android.view.MotionEvent.class, boolean.class), touch);
-        XposedBridge.hookMethod(method(launcher, "onStateSetStart",
-                load("com.android.launcher3.statemanager.BaseState", loader)), new XC_MethodHook() {
-            @Override protected void afterHookedMethod(MethodHookParam p) {
-                if (onUiThread() && p.args[0] != background) continueWorkspace(p.thisObject);
-            }
-        });
     }
 
     /**

@@ -98,6 +98,38 @@ public final class HomeInterruptionTest {
         reveal.setValue(launcher.mWorkspace, .8f);
         second.animation.mAnim.end();
         check((Float) reveal.get(launcher.mWorkspace) == .8f);
-        System.out.println("PASS: " + checks + " closing touch, opening scope, state handoff and scale ownership assertions");
+
+        WorkspaceReturn.install(HomeInterruptionTest.class.getClassLoader());
+        int settled = Motion.settled;
+        launcher.mStateManager.mState = LauncherState.NORMAL;
+        launcher.layer.focus = false;
+        // Launcher resumes and prepares NORMAL/OVERVIEW behind a still-dragged app.
+        // None of those events may consume the raised desktop's return animation.
+        XposedBridge.fire(launcher, "onStateSetStart", new Class<?>[]{BaseState.class}, LauncherState.NORMAL);
+        XposedBridge.fire(launcher, "onStateSetStart", new Class<?>[]{BaseState.class}, LauncherState.OVERVIEW);
+        XposedBridge.fire(launcher.layer, "proxyTouchEvent", new Class<?>[]{MotionEvent.class, boolean.class}, new MotionEvent(0), false);
+        XposedBridge.fire(launcher.layer, "dispatchTouchEvent", new Class<?>[]{MotionEvent.class}, new MotionEvent(0));
+        XposedBridge.fire(launcher, "onWindowFocusChanged", new Class<?>[]{boolean.class}, false);
+        check(Motion.settled == settled);
+        // Even a stale focus notification must not start a sink in the background.
+        XposedBridge.fire(launcher, "onWindowFocusChanged", new Class<?>[]{boolean.class}, true);
+        check(Motion.settled == settled);
+        launcher.layer.focus = true;
+        XposedBridge.fire(launcher, "onWindowFocusChanged", new Class<?>[]{boolean.class}, true);
+        check(Motion.settled == ++settled);
+        XposedBridge.fire(launcher.layer, "dispatchTouchEvent", new Class<?>[]{MotionEvent.class}, new MotionEvent(0));
+        check(Motion.settled == ++settled);
+        XposedBridge.fire(launcher.layer, "dispatchTouchEvent", new Class<?>[]{MotionEvent.class}, new MotionEvent(2));
+        check(Motion.settled == settled);
+        XposedBridge.fire(launcher, "onStateSetStart", new Class<?>[]{BaseState.class}, LauncherState.NORMAL);
+        XposedBridge.fire(launcher, "onStateSetStart", new Class<?>[]{BaseState.class}, LauncherState.BACKGROUND_APP);
+        check(Motion.settled == settled);
+        XposedBridge.fire(launcher, "onStateSetStart", new Class<?>[]{BaseState.class}, LauncherState.OVERVIEW);
+        check(Motion.settled == ++settled);
+        launcher.mStateManager.mState = LauncherState.BACKGROUND_APP;
+        XposedBridge.fire(launcher, "onWindowFocusChanged", new Class<?>[]{boolean.class}, true);
+        XposedBridge.fire(launcher.layer, "proxyTouchEvent", new Class<?>[]{MotionEvent.class, boolean.class}, new MotionEvent(0), true);
+        check(Motion.settled == settled);
+        System.out.println("PASS: " + checks + " closing touch, gesture preparation, focus fallback and scale ownership assertions");
     }
 }

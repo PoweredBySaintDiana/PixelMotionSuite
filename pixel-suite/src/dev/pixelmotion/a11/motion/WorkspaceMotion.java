@@ -71,7 +71,22 @@ final class WorkspaceMotion {
 
     void animate(Context context, List<View> views, List<Float> destinations, List<Long> delays,
             boolean nextRising, Runnable started, Runnable finished) throws ReflectiveOperationException {
-        boolean continuing = active() || raised();
+        animate(context, views, destinations, delays, nextRising, false, started, finished);
+    }
+
+    void returnToHome(Context context, List<View> views, List<Float> distances, List<Long> delays,
+            Runnable started, Runnable finished) throws ReflectiveOperationException {
+        animate(context, views, distances, delays, false, true, started, finished);
+    }
+
+    private void animate(Context context, List<View> views, List<Float> destinations, List<Long> delays,
+            boolean nextRising, boolean committedReturn, Runnable started, Runnable finished)
+            throws ReflectiveOperationException {
+        boolean inFlight = active();
+        // A held launch pose is not a running spring. A fresh close must use
+        // this gesture's distance instead of the fixed launch-rise distance.
+        boolean seedReturn = committedReturn && !inFlight && rising;
+        boolean continuing = inFlight || (raised() && !seedReturn);
         boolean wasRising = rising;
         for (Offset offset : owned.values()) offset.captureVelocity();
         cancel();
@@ -94,9 +109,9 @@ final class WorkspaceMotion {
                     offset = new Offset(view);
                     owned.put(view, offset);
                     OFFSETS.put(view, offset);
-                    // Pre-position only a fresh reveal, while the closing app covers the desktop.
-                    if (!nextRising && !continuing) offset.write(-destinations.get(i));
                 }
+                if (!nextRising && (seedReturn || (!reused && !continuing)))
+                    offset.write(-destinations.get(i));
                 float target = nextRising ? -destinations.get(i) : 0f;
                 float initialVelocity = reused ? offset.speed : 0f;
                 if (Math.abs(target - offset.value) < .025f && Math.abs(initialVelocity) < 1f) {

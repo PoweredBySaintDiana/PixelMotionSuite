@@ -79,6 +79,50 @@ public final class WorkspaceMotionTest {
         near(next.y, 11f);
         check(clips[0] == 0);
 
+        // A completed app opening must keep its full return travel, even after a long drag.
+        motion.animate(context, Arrays.asList(view), Arrays.asList(90f), Arrays.asList(0L), true, acquire, release);
+        AnimatorSet.latest.end();
+        near(view.y, 47f - 90f);
+        check(!motion.active() && motion.raised());
+        motion.returnToHome(context, Arrays.asList(view), Arrays.asList(60f), Arrays.asList(0L), acquire, release);
+        near(view.y, 47f - 60f);
+        first().sample(100);
+        check(view.y > 47f - 60f && view.y < 47f);
+        ValueAnimator returning = first();
+        before = view.y;
+        motion.settle(context);
+        near(view.y, before);
+        check(first() == returning);
+        AnimatorSet.latest.end();
+        near(view.y, 47f);
+        check(!motion.raised() && clips[0] == 0);
+
+        // A stronger release has a different starting distance, not the fixed launch lift.
+        motion.animate(context, Arrays.asList(view), Arrays.asList(90f), Arrays.asList(0L), true, acquire, release);
+        AnimatorSet.latest.end();
+        motion.returnToHome(context, Arrays.asList(view), Arrays.asList(130f), Arrays.asList(0L), acquire, release);
+        near(view.y, 47f - 130f);
+        first().sample(100);
+        before = view.y;
+        returning = first();
+        motion.returnToHome(context, Arrays.asList(view), Arrays.asList(50f), Arrays.asList(0L), acquire, release);
+        near(view.y, before);
+        check(first() != returning && first().velocity > 1f);
+        AnimatorSet.latest.end();
+        near(view.y, 47f);
+        check(clips[0] == 0);
+
+        // A rapid close during the launch rise must retain the current pose and velocity.
+        motion.animate(context, Arrays.asList(view), Arrays.asList(90f), Arrays.asList(0L), true, acquire, release);
+        first().sample(70);
+        before = view.y;
+        motion.returnToHome(context, Arrays.asList(view), Arrays.asList(130f), Arrays.asList(0L), acquire, release);
+        near(view.y, before);
+        check(first().velocity < -1f);
+        AnimatorSet.latest.end();
+        near(view.y, 47f);
+        check(clips[0] == 0);
+
         // Rapid successive reversals must never accumulate offsets or leave child rows shifted.
         for (int i = 0; i < 60; i++) {
             motion.animate(context, Arrays.asList(view, next), Arrays.asList(90f, 20f),

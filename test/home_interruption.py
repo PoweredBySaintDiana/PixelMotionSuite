@@ -8,7 +8,7 @@ tools = Path(sys.argv[1]).resolve()
 java = next((tools / 'jre').rglob('java.exe'))
 source = here.parent / 'pixel-suite/src/dev/pixelmotion/a11/motion'
 fixtures = {
-    'android.view.View': 'public class View {public Object getWindowToken(){return this;}}',
+    'android.view.View': 'public class View {public boolean focus;public boolean hasWindowFocus(){return focus;}public Object getWindowToken(){return this;}}',
     'android.view.MotionEvent': 'public class MotionEvent {public static final int ACTION_DOWN=0;public int action;public MotionEvent(int a){action=a;}public int getActionMasked(){return action;}}',
     'android.util.FloatProperty': 'public abstract class FloatProperty<T>{public FloatProperty(String name){}public abstract Float get(T target);public abstract void setValue(T target,float value);}',
     'android.animation.Animator': 'public class Animator {}',
@@ -53,6 +53,10 @@ fixtures = {
     'com.android.launcher3.Launcher': '''public class Launcher {
         public com.android.launcher3.statemanager.StateManager mStateManager=new com.android.launcher3.statemanager.StateManager();
         public android.view.View mWorkspace=new android.view.View(),mHotseat=new android.view.View();
+        public com.android.launcher3.views.BaseDragLayer layer=new com.android.launcher3.views.BaseDragLayer();
+        public Launcher(){layer.mContainer=this;}
+        public com.android.launcher3.views.BaseDragLayer getDragLayer(){return layer;}
+        public void onWindowFocusChanged(boolean focus){}
         public void onStateSetStart(com.android.launcher3.statemanager.BaseState state){}
     }''',
     'com.android.launcher3.uioverrides.QuickstepLauncher': 'public class QuickstepLauncher extends com.android.launcher3.Launcher {}',
@@ -73,6 +77,11 @@ fixtures = {
     }''',
     'com.android.launcher3.views.ListenerView': '''public class ListenerView extends com.android.launcher3.AbstractFloatingView {
         public Runnable mCloseListener;public boolean onControllerInterceptTouchEvent(android.view.MotionEvent e){return false;}
+    }''',
+    'com.android.launcher3.views.BaseDragLayer': '''public class BaseDragLayer extends android.view.View {
+        public Object mContainer;
+        public boolean dispatchTouchEvent(android.view.MotionEvent e){return true;}
+        public boolean proxyTouchEvent(android.view.MotionEvent e,boolean fromLauncher){return true;}
     }''',
     'com.android.launcher3.anim.AnimatedPropertySetter': 'public class AnimatedPropertySetter {public android.animation.AnimatorSet mAnim=new android.animation.AnimatorSet();}',
     'com.android.launcher3.anim.PendingAnimation': 'public class PendingAnimation extends AnimatedPropertySetter {}',
@@ -103,6 +112,6 @@ with tempfile.TemporaryDirectory() as directory:
         path.write_text('package ' + name.rsplit('.', 1)[0] + ';\n' + body, encoding='utf-8')
         paths.append(path)
     subprocess.run([java, '-jar', tools/'ecj.jar', '-8', '-proc:none', '-nowarn', '-d', output,
-                    *paths, source/'HomeInterruption.java', source/'RevealScaleCleanup.java',
+                    *paths, source/'HomeInterruption.java', source/'RevealScaleCleanup.java', source/'WorkspaceReturn.java',
                     here/'HomeInterruptionTest.java'], check=True)
     subprocess.run([java, '-cp', output, 'dev.pixelmotion.a11.motion.HomeInterruptionTest'], check=True)
