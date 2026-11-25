@@ -40,6 +40,7 @@ public final class Motion implements IXposedHookLoadPackage {
     private static final WeakHashMap<Object, Boolean> FIXED_TARGETS = new WeakHashMap<>();
     private static final WeakHashMap<Object, Boolean> SYNCED_SPRINGS = new WeakHashMap<>();
     private static final WeakHashMap<Object, AnimatorSet> STAGGERED_ANIMATIONS = new WeakHashMap<>();
+    private static final WeakHashMap<Object, WorkspaceMotion> WORKSPACE_MOTIONS = new WeakHashMap<>();
     private static final WeakHashMap<Object, IdentityHashMap<View, Float>> STAGGERED_BASES = new WeakHashMap<>();
     private static final WeakHashMap<View, Float> SMARTSPACE_BASES = new WeakHashMap<>();
     private static final WeakHashMap<Object, Landing> LANDINGS = new WeakHashMap<>();
@@ -92,6 +93,11 @@ public final class Motion implements IXposedHookLoadPackage {
         Class<?> launcher = load(LAUNCHER, loader);
         final Field workspace = field(launcher, "mWorkspace");
         final Field hotseat = field(launcher, "mHotseat");
+        if (workspaceMotion) WorkspaceMotion.install();
+        if (workspaceMotion) try { installWorkspaceInterruption(loader, launcher); }
+        catch (ReflectiveOperationException error) { log("Workspace touch hooks unavailable: " + error); }
+        try { RevealScaleCleanup.install(loader); }
+        catch (ReflectiveOperationException error) { log("Reveal scale cleanup unavailable: " + error); }
         Class<?> spring = load(UTIL + "RectFSpringAnim", loader);
         Class<?> deviceProfile = load("com.android.launcher3.DeviceProfile", loader);
         final Field listeners = field(spring, "mAnimatorListeners");
@@ -352,6 +358,10 @@ public final class Motion implements IXposedHookLoadPackage {
                     });
         } catch (Throwable error) { log("Dock launch tracking unavailable: " + error); }
         if (iconMotion) {
+            try { HomeInterruption.install(loader); }
+            catch (ReflectiveOperationException | RuntimeException | LinkageError error) {
+                log("Home interruption hooks unavailable: " + error);
+            }
             try { IconLayers.install(loader, floatingIcon, spring); }
             catch (Throwable error) { log("Icon layer hooks unavailable: " + error); }
             try { installOpeningCurve(loader, launcher, workspace, hotseat, deviceProfile); }
@@ -368,6 +378,14 @@ public final class Motion implements IXposedHookLoadPackage {
                 }
             });
         } catch (Throwable error) { log("A11 settle hook unavailable: " + error); }
+        if (workspaceMotion) try {
+            XposedBridge.hookMethod(method(launcher, "onDestroy"), new XC_MethodHook() {
+                @Override protected void beforeHookedMethod(MethodHookParam p) {
+                    WorkspaceMotion motion = WORKSPACE_MOTIONS.remove(p.thisObject);
+                    if (motion != null) motion.clear();
+                }
+            });
+        } catch (ReflectiveOperationException error) { log("Workspace teardown unavailable: " + error); }
         if (pageMotion) try { PageRecoil.install(loader); }
         catch (Throwable error) { log("Workspace page recoil unavailable: " + error); }
     }
@@ -738,23 +756,11 @@ public final class Motion implements IXposedHookLoadPackage {
         float density = workspace.getResources().getDisplayMetrics().density;
         float factor = .2f + .9f * Math.abs(velocity) / 22f;
         float offset = 60f * density * factor;
-        Class<?> builderClass = load("com.android.launcher3.anim.SpringAnimationBuilder", loader);
-        Constructor<?> builderConstructor = builderClass.getDeclaredConstructor(Context.class);
-        Method setStiffness = method(builderClass, "setStiffness", float.class);
-        Method setDamping = method(builderClass, "setDampingRatio", float.class);
-        Method setMinimum = method(builderClass, "setMinimumVisibleChange", float.class);
-        Class<?> floatPropertyClass = load("android.util.FloatProperty", loader);
-        Method build = method(builderClass, "build", Object.class, floatPropertyClass);
-        Field startValue = field(builderClass, "mStartValue");
-        Field endValue = field(builderClass, "mEndValue");
-        Field springVelocity = field(builderClass, "mVelocity");
-        Field translateY = field(load("com.android.launcher3.LauncherAnimUtils", loader), "VIEW_TRANSLATE_Y");
-        Object property = translateY.get(null);
-        Context context = (Context) owner;
-
-        AnimatorSet previous = STAGGERED_ANIMATIONS.get(owner);
-        if (previous != null && previous.isRunning()) previous.cancel();
-        final AnimatorSet animators = new AnimatorSet();
+        WorkspaceMotion motion = WORKSPACE_MOTIONS.get(owner);
+        if (motion == null) {
+            motion = new WorkspaceMotion(loader);
+            WORKSPACE_MOTIONS.put(owner, motion);
+        }
         final ClipGuard clipGuard = new ClipGuard();
         clipGuard.add(workspace);
         if (page instanceof ViewGroup) clipGuard.add((ViewGroup) page);
@@ -763,37 +769,10 @@ public final class Motion implements IXposedHookLoadPackage {
         // clip its overshoot while it travels with the sink/rise.
         addParentClipChain(clipGuard, workspace, 5);
         addParentClipChain(clipGuard, hotseat, 5);
-        clipGuard.disable();
-        // A launch from the dock makes the next sink put the whole dock a
-        // little further than the page, so the dock leads the motion.
         final float dockDistance = dockLaunch ? offset * 1.45f : offset;
+        List<Float> distances = new ArrayList<>();
         for (int i = 0; i < targets.size(); i++) {
-            final View view = targets.get(i);
-            final float distance = i == hotseatIndex ? dockDistance : offset;
-            final float end = rising ? -distance : 0f;
-            float start;
-            if (rising) {
-                start = Math.min(view.getTranslationY(), 0f);
-            } else {
-                // A return normally starts from the raised launch position; if
-                // the launcher restarted, pre-position under the closing app.
-                start = view.getTranslationY() < -1f ? view.getTranslationY() : -distance;
-            }
-            if (Math.abs(start - end) < 1f) continue;
-            view.setTranslationY(start);
-            Object builder = builderConstructor.newInstance(context);
-            startValue.setFloat(builder, start);
-            endValue.setFloat(builder, end);
-            springVelocity.setFloat(builder, 0f);
-            setStiffness.invoke(builder, 150f);
-            setDamping.invoke(builder, .7f);
-            setMinimum.invoke(builder, 1f);
-            Animator animator = (Animator) build.invoke(builder, view, property);
-            animator.setStartDelay(delays.get(i));
-            animator.addListener(new AnimatorListenerAdapter() {
-                @Override public void onAnimationEnd(Animator animation) { view.setTranslationY(end); }
-            });
-            animators.play(animator);
+            distances.add(i == hotseatIndex ? dockDistance : offset);
         }
         // Row gradient: the dock uses the base distance and each page row adds
         // a little more, so the top row travels farthest (A11's 1.00-1.24 ramp).
@@ -812,41 +791,13 @@ public final class Motion implements IXposedHookLoadPackage {
                 float height = Math.max(0f, Math.min(1f, (rows + 1 - row) / (float) Math.max(1, rows)));
                 final float extra = offset * .35f * height;
                 if (extra < 1f) continue;
-                final float end = rising ? -extra : 0f;
-                float start;
-                if (rising) {
-                    start = Math.min(child.getTranslationY(), 0f);
-                } else {
-                    start = child.getTranslationY() < -1f ? child.getTranslationY() : -extra;
-                }
-                if (Math.abs(start - end) < 1f) continue;
-                child.setTranslationY(start);
-                Object builder = builderConstructor.newInstance(context);
-                startValue.setFloat(builder, start);
-                endValue.setFloat(builder, end);
-                springVelocity.setFloat(builder, 0f);
-                setStiffness.invoke(builder, 150f);
-                setDamping.invoke(builder, .7f);
-                setMinimum.invoke(builder, 1f);
-                Animator animator = (Animator) build.invoke(builder, child, property);
-                animator.addListener(new AnimatorListenerAdapter() {
-                    @Override public void onAnimationEnd(Animator animation) { child.setTranslationY(end); }
-                });
-                animators.play(animator);
+                targets.add(child);
+                distances.add(extra);
+                delays.add(0L);
             }
         }
-        if (animators.getChildAnimations().isEmpty()) {
-            clipGuard.restore();
-            return;
-        }
-        animators.addListener(new AnimatorListenerAdapter() {
-            @Override public void onAnimationEnd(Animator animation) {
-                clipGuard.restore();
-                if (STAGGERED_ANIMATIONS.get(owner) == animators) STAGGERED_ANIMATIONS.remove(owner);
-            }
-        });
-        STAGGERED_ANIMATIONS.put(owner, animators);
-        animators.start();
+        motion.animate((Context) owner, targets, distances, delays, rising,
+                clipGuard::disable, clipGuard::restore);
         if (!loggedShift) {
             loggedShift = true;
         }
@@ -858,29 +809,47 @@ public final class Motion implements IXposedHookLoadPackage {
     /** Restores a raised desktop when a return path did not run the sink. */
     private static void settleShift(Object owner, ClassLoader loader,
             Field workspaceField, Field hotseatField) throws Throwable {
-        AnimatorSet running = STAGGERED_ANIMATIONS.get(owner);
-        if (running != null && running.isRunning()) return;
-        ViewGroup workspace = (ViewGroup) workspaceField.get(owner);
-        if (workspace == null || workspace.getWindowToken() == null) return;
-        Class<?> cellClass = load("com.android.launcher3.CellLayout", loader);
-        Field itemsField = field(cellClass, "mShortcutsAndWidgets");
-        Method getCurrentPage = workspace.getClass().getMethod("getCurrentPage");
-        int current = ((Number) getCurrentPage.invoke(workspace)).intValue();
-        View page = current >= 0 && current < workspace.getChildCount()
-                ? workspace.getChildAt(current) : null;
-        boolean raised = false;
-        if (page != null) {
-            Object items = itemsField.get(page);
-            View view = items instanceof View ? (View) items : page;
-            raised |= Math.abs(view.getTranslationY()) > 1f;
+        WorkspaceMotion motion = WORKSPACE_MOTIONS.get(owner);
+        if (motion == null || !motion.raised() || (motion.active() && !motion.rising())) return;
+        motion.settle((Context) owner);
+    }
+
+    static void continueWorkspace(Object owner) {
+        WorkspaceMotion motion = WORKSPACE_MOTIONS.get(owner);
+        if (motion == null) return;
+        try { motion.settle((Context) owner); }
+        catch (ReflectiveOperationException error) {
+            motion.clear();
+            log("Workspace interruption settle unavailable: " + error);
         }
-        ViewGroup hotseat = (ViewGroup) hotseatField.get(owner);
-        if (hotseat != null) {
-            raised |= Math.abs(hotseat.getTranslationY()) > 1f;
-        }
-        if (raised) {
-            shiftWorkspace(owner, WORKSPACE_SHIFT_VELOCITY, loader, workspaceField, hotseatField, false);
-        }
+    }
+
+    private static void installWorkspaceInterruption(ClassLoader loader, Class<?> launcher)
+            throws ReflectiveOperationException {
+        Class<?> layer = load("com.android.launcher3.views.BaseDragLayer", loader);
+        Field owner = field(layer, "mContainer");
+        Field manager = field(launcher, "mStateManager");
+        Field current = field(manager.getType(), "mState");
+        Class<?> state = load("com.android.launcher3.LauncherState", loader);
+        Object normal = field(state, "NORMAL").get(null);
+        Object background = field(state, "BACKGROUND_APP").get(null);
+        XC_MethodHook touch = new XC_MethodHook() {
+            @Override protected void beforeHookedMethod(MethodHookParam p) throws Throwable {
+                android.view.MotionEvent event = (android.view.MotionEvent) p.args[0];
+                if (!onUiThread() || event.getActionMasked() != android.view.MotionEvent.ACTION_DOWN) return;
+                Object activity = owner.get(p.thisObject);
+                if (launcher.isInstance(activity) && current.get(manager.get(activity)) == normal)
+                    continueWorkspace(activity);
+            }
+        };
+        XposedBridge.hookMethod(method(layer, "dispatchTouchEvent", android.view.MotionEvent.class), touch);
+        XposedBridge.hookMethod(method(layer, "proxyTouchEvent", android.view.MotionEvent.class, boolean.class), touch);
+        XposedBridge.hookMethod(method(launcher, "onStateSetStart",
+                load("com.android.launcher3.statemanager.BaseState", loader)), new XC_MethodHook() {
+            @Override protected void afterHookedMethod(MethodHookParam p) {
+                if (onUiThread() && p.args[0] != background) continueWorkspace(p.thisObject);
+            }
+        });
     }
 
     /**

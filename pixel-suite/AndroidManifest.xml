@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="dev.pixelmotion.a10.recents"
     android:versionCode="58"
-    android:versionName="2.3.16">
+    android:versionName="2.3.17-interruption-test1">
     <permission android:name="dev.pixelmotion.a10.recents.permission.AOD_CONTROL" android:protectionLevel="signature" />
     <uses-permission android:name="dev.pixelmotion.a10.recents.permission.AOD_CONTROL" />
     <queries>
