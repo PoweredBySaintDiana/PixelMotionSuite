@@ -37,6 +37,7 @@ fixtures = {
     }''',
     'dev.pixelmotion.a11.motion.Motion': '''class Motion {
         static boolean onUiThread(){return true;}static int settled;
+        static void log(String message){}
         static void continueWorkspace(Object owner){settled++;}
         static Class<?> load(String name,ClassLoader loader)throws ClassNotFoundException{return loader.loadClass(name);}
         static java.lang.reflect.Field field(Class<?> c,String name)throws NoSuchFieldException{
@@ -54,6 +55,11 @@ fixtures = {
         public android.view.View mWorkspace=new android.view.View(),mHotseat=new android.view.View();
         public void onStateSetStart(com.android.launcher3.statemanager.BaseState state){}
     }''',
+    'com.android.launcher3.uioverrides.QuickstepLauncher': 'public class QuickstepLauncher extends com.android.launcher3.Launcher {}',
+    'com.android.launcher3.AbstractFloatingView': '''public class AbstractFloatingView extends android.view.View {
+        protected boolean mIsOpen=true;
+        public boolean isOpen(){return mIsOpen;}
+    }''',
     'com.android.launcher3.model.data.ItemInfo': 'public class ItemInfo {}',
     'com.android.launcher3.QuickstepTransitionManager': '''public class QuickstepTransitionManager {
         public Launcher mLauncher;public void getActivityLaunchOptions(android.view.View v,com.android.launcher3.model.data.ItemInfo item){}
@@ -65,13 +71,14 @@ fixtures = {
     'com.android.launcher3.views.FloatingIconView$$ExternalSyntheticLambda4': '''public class FloatingIconView$$ExternalSyntheticLambda4 implements Runnable {
         public FloatingIconView c;public void run(){c.fastFinish();}
     }''',
-    'com.android.launcher3.views.ListenerView': '''public class ListenerView extends android.view.View {
-        public boolean mIsOpen=true;public Runnable mCloseListener;public boolean onControllerInterceptTouchEvent(android.view.MotionEvent e){return false;}
+    'com.android.launcher3.views.ListenerView': '''public class ListenerView extends com.android.launcher3.AbstractFloatingView {
+        public Runnable mCloseListener;public boolean onControllerInterceptTouchEvent(android.view.MotionEvent e){return false;}
     }''',
     'com.android.launcher3.anim.AnimatedPropertySetter': 'public class AnimatedPropertySetter {public android.animation.AnimatorSet mAnim=new android.animation.AnimatorSet();}',
+    'com.android.launcher3.anim.PendingAnimation': 'public class PendingAnimation extends AnimatedPropertySetter {}',
     'com.android.quickstep.util.ScalingWorkspaceRevealAnim': '''public class ScalingWorkspaceRevealAnim {
-        public com.android.launcher3.Launcher launcher;
-        public com.android.launcher3.anim.AnimatedPropertySetter animation=new com.android.launcher3.anim.AnimatedPropertySetter();
+        public com.android.launcher3.uioverrides.QuickstepLauncher launcher;
+        public com.android.launcher3.anim.PendingAnimation animation=new com.android.launcher3.anim.PendingAnimation();
         public void start(){}
     }''',
     'com.android.launcher3.LauncherAnimUtils': '''public class LauncherAnimUtils {

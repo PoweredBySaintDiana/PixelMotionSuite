@@ -3,6 +3,7 @@ package dev.pixelmotion.a11.motion;
 import android.util.FloatProperty;
 import android.view.MotionEvent;
 import com.android.launcher3.Launcher;
+import com.android.launcher3.uioverrides.QuickstepLauncher;
 import com.android.launcher3.LauncherState;
 import com.android.launcher3.LauncherAnimUtils;
 import com.android.launcher3.QuickstepTransitionManager;
@@ -36,12 +37,12 @@ public final class HomeInterruptionTest {
 
     public static void main(String[] args) throws Throwable {
         HomeInterruption.install(HomeInterruptionTest.class.getClassLoader());
-        Launcher launcher = new Launcher();
+        QuickstepLauncher launcher = new QuickstepLauncher();
         FloatingIconView icon = new FloatingIconView();
         icon.mLauncher = launcher;
         ListenerView listener = listener(icon);
         check(Boolean.FALSE.equals(touch(listener, MotionEvent.ACTION_DOWN)));
-        check(!listener.mIsOpen && icon.finishes == 0 && Motion.settled == 1);
+        check(!listener.isOpen() && icon.finishes == 0 && Motion.settled == 1);
         QuickstepTransitionManager launch = new QuickstepTransitionManager();
         launch.mLauncher = new Launcher();
         Class<?>[] options = {android.view.View.class, com.android.launcher3.model.data.ItemInfo.class};
@@ -55,7 +56,7 @@ public final class HomeInterruptionTest {
         icon.mLauncher = launcher;
         icon.mIsOpening = true;
         listener = listener(icon);
-        check(touch(listener, 0) == null && listener.mIsOpen);
+        check(touch(listener, 0) == null && listener.isOpen());
         icon.mIsOpening = false;
         launcher.mStateManager.mState = LauncherState.OVERVIEW;
         check(touch(listener, 0) == null);

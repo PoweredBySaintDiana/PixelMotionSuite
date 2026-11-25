@@ -22,9 +22,10 @@ final class RevealScaleCleanup {
         FloatProperty workspaceScale = (FloatProperty) get.invoke(workspaceFactory, 2);
         FloatProperty hotseatScale = (FloatProperty) get.invoke(hotseatFactory, 2);
         Field launcher = Motion.field(reveal, "launcher");
-        Field workspace = Motion.field(launcher.getType(), "mWorkspace");
-        Field hotseat = Motion.field(launcher.getType(), "mHotseat");
-        Field manager = Motion.field(launcher.getType(), "mStateManager");
+        Class<?> launcherType = Motion.load("com.android.launcher3.Launcher", loader);
+        Field workspace = Motion.field(launcherType, "mWorkspace");
+        Field hotseat = Motion.field(launcherType, "mHotseat");
+        Field manager = Motion.field(launcherType, "mStateManager");
         Field state = Motion.field(manager.getType(), "mState");
         Object normal = Motion.field(Motion.load("com.android.launcher3.LauncherState", loader), "NORMAL").get(null);
         Field pending = Motion.field(reveal, "animation");
@@ -56,5 +57,6 @@ final class RevealScaleCleanup {
                 });
             }
         });
+        Motion.log("Reveal scale cleanup ready");
     }
 }

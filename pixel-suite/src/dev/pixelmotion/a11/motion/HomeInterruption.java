@@ -24,7 +24,7 @@ final class HomeInterruption {
         Object normal = Motion.field(state, "NORMAL").get(null);
         Object background = Motion.field(state, "BACKGROUND_APP").get(null);
         Field close = Motion.field(listener, "mCloseListener");
-        Field isOpen = Motion.field(listener, "mIsOpen");
+        Field isOpen = Motion.field(Motion.load("com.android.launcher3.AbstractFloatingView", loader), "mIsOpen");
         Field icon = Motion.field(callback, "c");
         Field opening = Motion.field(floating, "mIsOpening");
         Field end = Motion.field(floating, "mEndRunnable");
@@ -64,6 +64,7 @@ final class HomeInterruption {
         XposedBridge.hookMethod(Motion.method(floating, "recycle"), new XC_MethodHook() {
             @Override protected void beforeHookedMethod(MethodHookParam p) { CONTINUING.remove(p.thisObject); }
         });
+        Motion.log("Home touch continuation ready");
     }
 
     private static void finishContinuing(Method finish, Field owner, Object launcher) throws ReflectiveOperationException {
